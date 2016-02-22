@@ -2,17 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include "gethostsname.h"
+#include "list.h"
+#include  <sys/types.h> //fork include
 
 int main(int argc, char * argv[]){
-    
+
     int i,j,bad_arguments=0, contagem=0; //Integers to check the arguments
     int porto_maquina = 0,porto_servidor = 0;
     char surname[20], ip_maquina[20], ip_servidor[20];
-    
+
     struct in_addr ipaddress, ipaddress2;
-    
+
+    //struct in_addr compare_ipaddress,compare_ipaddress2;//Struct to compare the address given by the user
+
     //Check the application's arguments
-    
+
     //saip and saport omitted, argc=7 (snp -n surname -s snpip -q snpport)
     if(argc==7){
         for(i=1;i<7;i+=2){
@@ -52,8 +57,12 @@ int main(int argc, char * argv[]){
                 }
             }
         }
+        
+        /*-----------------------------
+        //Get the address of Tejo
         // char saip[30] = "tejo.tecnico.ulisboa.pt";//Omitted values
         //int port2 = 58000;
+         -----------------------------*/
         if(contagem != 3){bad_arguments=1;}//Wrong arguments
     }
     //All arguments
@@ -112,17 +121,70 @@ int main(int argc, char * argv[]){
         }
         if(contagem != 5){bad_arguments=1;}//Wrong arguments
     }
-    
-    
+    //Verify the address of the host
+    //get_host_name();
+
     //Missing arguments , too many arguments or bad arguments
     if((argc!=7 && argc!=11) || bad_arguments == 1){
         printf("Invocar aplicação da seguinte forma ./snp -n surname -s snpip -q snpport [-i saip] [-p saport]\n");
         exit(1);
     }
-    
-    
+
+
     //Registo do servidor de nomes,envio da sua localizaçã para o servidor de apelidos
-    //Loop List/Exit
-    printf("Apelido: %s\nIP address: %s\nPort: %d\n",surname,ip_maquina,porto_maquina);
-    exit(0);
+    printf("SNP:\nSurname: %s\nIP address: %s\nPort: %d\n\n",surname,ip_maquina,porto_maquina);
+    printf("SA:\nIP address: %s\nPort: %d\n\n",ip_servidor,porto_servidor);
+    
+    
+    /*
+    //FOrk
+    pid_t pid;
+    
+    void (*old_handler)(int);//interrupt handler
+    if((old_handler=signal(SIGCHLD,SIG_IGN))==SIG_ERR)exit(1);//error
+    
+    pid = fork();
+    if (pid == 0){
+        //Child
+        //UDP socket
+    }else{
+        //Parent
+        //UList and Exit
+        //kill child -- kill(pid, SIGKILL)
+    }
+     */
+
+    // Linked list with elements with Full Name <--> IP address
+    element *ptr_to_first;//* new,
+    char n_name[20], n_surname[20], n_ip[20];
+    ptr_to_first = NULL;
+    
+    // Interface with the user
+    int interface_option;
+    int exit_menu=0;
+    while(exit_menu==0){
+
+        printf("\nWelcome to the Name Server Interface. Choose an action: \n 1: List\n 2: Exit \n 3: [TESTING] Add to list \n Action nr: ");
+        scanf("%d",&interface_option);
+
+        switch (interface_option) {
+            case 1:
+                printf("\n Complete table of association [Full name] <--> [IP]<\n");
+                print_list(ptr_to_first);
+                break;
+            case 2:
+                printf("\n Terminating server... \n");
+                exit_menu=1;
+                break;
+            // NOT PART OF THE INTERFACE. Just for testing the linked list.
+            case 3:
+                printf("\n Write in format [Name Surname IP] to be added: ");
+                scanf("%s", n_name);
+                scanf("%s", n_surname);
+                scanf("%s", n_ip);
+                ptr_to_first = add_element(n_name,n_surname, n_ip, ptr_to_first);
+                break;
+        }
+    }
+       exit(0);
 }
