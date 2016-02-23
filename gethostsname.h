@@ -3,8 +3,8 @@
 
 #include "gethostsname.h"
 
-struct in_addr getaddressbyname(const char* name, struct in_addr *a);
+struct in_addr getaddressbyname(char** name);
 
-
+struct in_addr get_host_name();
 
 #endif /* gethostsname_h */

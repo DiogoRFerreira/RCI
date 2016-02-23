@@ -4,17 +4,18 @@
 #include <arpa/inet.h>
 #include "gethostsname.h"
 #include "list.h"
+#include "udp_socket_client.h"
 #include  <sys/types.h> //fork include
 
 int main(int argc, char * argv[]){
 
     int i,j,bad_arguments=0, contagem=0; //Integers to check the arguments
-    int porto_maquina = 0,porto_servidor = 0;
-    char surname[20], ip_maquina[20], ip_servidor[20];
-
+    int porto_maquina = 0,porto_servidor = 0;//Port variables
+    char surname[20], ip_maquina[20], ip_servidor[20];//IP variables
+    char * name_ip_servidor = (char*)malloc(126*sizeof(char));//-------Falta fazer o free------//
+    char * message = (char*)malloc(126*sizeof(char));
+    
     struct in_addr ipaddress, ipaddress2;
-
-    //struct in_addr compare_ipaddress,compare_ipaddress2;//Struct to compare the address given by the user
 
     //Check the application's arguments
 
@@ -58,11 +59,12 @@ int main(int argc, char * argv[]){
             }
         }
         
-        /*-----------------------------
+
         //Get the address of Tejo
-        // char saip[30] = "tejo.tecnico.ulisboa.pt";//Omitted values
-        //int port2 = 58000;
-         -----------------------------*/
+        strcpy(name_ip_servidor,"tejo.tecnico.ulisboa.pt");//Omitted values
+        ipaddress2 = getaddressbyname(&name_ip_servidor);//Converte from name to ip
+        porto_servidor = 58000;
+
         if(contagem != 3){bad_arguments=1;}//Wrong arguments
     }
     //All arguments
@@ -121,8 +123,10 @@ int main(int argc, char * argv[]){
         }
         if(contagem != 5){bad_arguments=1;}//Wrong arguments
     }
+    
     //Verify the address of the host
-    //get_host_name();
+    struct in_addr compare_address;
+    compare_address = get_host_name();//------------Falta comparar---------//
 
     //Missing arguments , too many arguments or bad arguments
     if((argc!=7 && argc!=11) || bad_arguments == 1){
@@ -131,31 +135,30 @@ int main(int argc, char * argv[]){
     }
 
 
-    //Registo do servidor de nomes,envio da sua localizaçã para o servidor de apelidos
+    //Printf dos valores
     printf("SNP:\nSurname: %s\nIP address: %s\nPort: %d\n\n",surname,ip_maquina,porto_maquina);
     printf("SA:\nIP address: %s\nPort: %d\n\n",ip_servidor,porto_servidor);
+
+    //Registo do servidor de nomes,envio da sua localizaçã para o servidor de apelidos
     
+    //utilizar o sscanf para criar a mensagem
+    strcpy(message,"");
+    udp_socket(ipaddress2,porto_servidor,&message);
+    
+    //Menu Aqui
+    
+    
+    
+    //Remover o servidor de nomes proprios do de apelidos
+    
+    //utilizar o sscanf para criar a mensagem
+    strcpy(message,"");
+    udp_socket(ipaddress2,porto_servidor,&message);
     
     /*
-    //FOrk
-    pid_t pid;
-    
-    void (*old_handler)(int);//interrupt handler
-    if((old_handler=signal(SIGCHLD,SIG_IGN))==SIG_ERR)exit(1);//error
-    
-    pid = fork();
-    if (pid == 0){
-        //Child
-        //UDP socket
-    }else{
-        //Parent
-        //UList and Exit
-        //kill child -- kill(pid, SIGKILL)
-    }
-     */
 
     // Linked list with elements with Full Name <--> IP address
-    element *ptr_to_first;//* new,
+    element *ptr_to_first;* new,
     char n_name[20], n_surname[20], n_ip[20];
     ptr_to_first = NULL;
     
@@ -185,6 +188,6 @@ int main(int argc, char * argv[]){
                 ptr_to_first = add_element(n_name,n_surname, n_ip, ptr_to_first);
                 break;
         }
-    }
+    }*/
        exit(0);
 }

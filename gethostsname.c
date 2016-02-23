@@ -11,12 +11,12 @@
 
 extern int errno;
 
-struct in_addr getaddressbyname(const char* name){
+struct in_addr getaddressbyname(char** name){
     
     struct in_addr *a;
     struct hostent *h;
     
-    if((h=gethostbyname(name))==NULL){//error
+    if((h=gethostbyname(*name))==NULL){//error
         exit(1);
     }
     
@@ -26,21 +26,21 @@ struct in_addr getaddressbyname(const char* name){
     
     return *a;
 }
-/*
-//Passar por refência para alterar valor funcntion(&name)    function (char * name)
-void get_host_name(struct in_addr *compare){
+
+struct in_addr get_host_name(){
     
     struct in_addr *a;
-    char *hostname[128];
+    char * name_ip = (char*)malloc(126*sizeof(char));//Falta fazer o free
 
-    if(gethostname(hostname,128)==-1){
+    if(gethostname(name_ip,128)==-1){
         printf("error: %s\n",strerror(errno));
-    }else{printf("host name: %s\n",*hostname);}
+    }else{printf("host name: %s\n",name_ip);}
     
-    *a=get_address_by_name();
+    *a=getaddressbyname(&name_ip);
     
+    return *a;
 }
-*/
+
 
 
 
