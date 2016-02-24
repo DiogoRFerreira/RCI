@@ -11,7 +11,8 @@
 
 void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço para onde vai enviar, o ip para onde vai enviar e a mensagem que envia
     
-    int fd, n, addrlen;
+    int fd, n;
+    socklen_t addrlen;
     struct sockaddr_in addr;
     char buffer[128];
     
@@ -36,3 +37,32 @@ void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço 
     close(fd);
     
 }
+
+void udp_socket_server(){
+    
+    int fd, addrlen, ret, nread;
+    struct sockaddr_in addr;
+    char buffer[128];
+    
+    if((fd=socket(AF_INET,SOCK_DGRAM,0))==-1)exit(1);//error
+    
+    memset((void*)&addr,(int)'\0',sizeof(addr));
+    addr.sin_family=AF_INET;
+    addr.sin_addr.s_addr=htonl(INADDR_ANY);
+    addr.sin_port=htons(9000);
+    
+    ret=bind(fd,(struct sockaddr*)&addr,sizeof(addr)); if(ret==-1)exit(1);//error
+    
+    while(1){addrlen=sizeof(addr);
+        nread=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,&addrlen);
+        if(nread==-1)exit(1);//error
+        
+        //------IFs para verificar a mensagem--------//
+        
+        ret=sendto(fd,buffer,nread,0,(struct sockaddr*)&addr,addrlen);
+        if(ret==-1)exit(1);//error
+    }
+    close(fd);
+}
+
+
