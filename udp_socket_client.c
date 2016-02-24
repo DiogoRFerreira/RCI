@@ -10,7 +10,6 @@
 
 
 void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço para onde vai enviar, o ip para onde vai enviar e a mensagem que envia
-    printf("2message:");
     int fd, n;
     socklen_t addrlen;
     struct sockaddr_in addr;
@@ -32,8 +31,10 @@ void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço 
 
     n=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,&addrlen);
     if(n==-1)exit(1);//error
-    write(1,"echo: ",6);//stdout
+    
+    write(1,"Message received: ",18);//stdout
     write(1,buffer,n);
+    printf("\n");
     close(fd);
     return;
 
@@ -58,8 +59,12 @@ void udp_socket_server(){
     while(1){addrlen=sizeof(addr);
         nread=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,&addrlen);
         if(nread==-1)exit(1);//error
-
-        //------IFs para verificar a mensagem--------//
+        
+        //------Registo do utilizador----
+        //UNR name.surname
+        //REG name.surname;ip;scport
+        //------Query------
+        //QRY name.surname
 
         ret=sendto(fd,buffer,nread,0,(struct sockaddr*)&addr,addrlen);
         if(ret==-1)exit(1);//error

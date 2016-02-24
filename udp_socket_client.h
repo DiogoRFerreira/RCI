@@ -10,4 +10,6 @@
 
 void udp_socket(struct in_addr ip,int port,char** message);
 
+void udp_socket_server();
+
 #endif /* udp_socket_client_h */

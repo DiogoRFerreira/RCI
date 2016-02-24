@@ -63,25 +63,25 @@ int main(int argc, char * argv[]){
             }
         }
         //Get the address of Tejo
-        strcpy(name_ip_servidor,"tejo.tecnico.ulisboa.pt");     //Omitted values
-        ipaddress2 = getaddressbyname(&name_ip_servidor);       //Convert from name to ip
+        strcpy(name_ip_servidor,"tejo.tecnico.ulisboa.pt");//Omitted values
+        ipaddress2 = getaddressbyname(&name_ip_servidor);//Convert from name to ip
         porto_servidor = 58000;
 
-        if(contagem != 3){bad_arguments=1;}              //Wrong arguments
+        if(contagem != 3){bad_arguments=1;}//Wrong arguments
     
     //All arguments
     }else if(argc==11){
         for(i=1;i<11;i+=2){
-            if(strcmp(argv[i],"-n")==0){            //Surname
-                if(strlen(argv[i+1])>20){           //Check the lenght of the surname
+            if(strcmp(argv[i],"-n")==0){//Surname
+                if(strlen(argv[i+1])>20){//Check the lenght of the surname
                     printf("Invalid Surname: Too big...\n");
                     bad_arguments=1;
                 }else{
-                    if(argv[i+1][0]>'Z'|| argv[i+1][0]<'A'){        //First letter must be a capital
+                    if(argv[i+1][0]>'Z'|| argv[i+1][0]<'A'){//First letter must be a capital
                         printf("Invalid Surname: Must use a capital letter for the first character of a surname\n");
                         bad_arguments=1;
                     }else{
-                        for(j=1;j<=(strlen(argv[i+1])-1);j++){      //Must be lower case
+                        for(j=1;j<=(strlen(argv[i+1])-1);j++){//Must be lower case
                             if('a'>argv[i+1][j] || argv[i+1][j]>'z'){
                                 printf("Invalid Surname: Must use lower case letters to the rest of the surname \n");
                                 bad_arguments=1;
@@ -91,7 +91,7 @@ int main(int argc, char * argv[]){
                         contagem++;
                     }
                 }
-            }else if(strcmp(argv[i],"-s")==0){      //IP address
+            }else if(strcmp(argv[i],"-s")==0){//IP address
                 if(inet_pton(AF_INET,argv[i+1],&(ipaddress.s_addr))==1){        //Check if the ip is valid
                     strcpy(ip_maquina, argv[i+1]);
                     contagem++;
@@ -126,77 +126,67 @@ int main(int argc, char * argv[]){
         if(contagem != 5){bad_arguments=1;}//Wrong arguments
     }
 
-    //Verify the address of the host
-    /*struct in_addr compare_address;
+    //Check the host's address
+    struct in_addr compare_address;
     compare_address = get_host_name();
     if(compare_address.s_addr!=ipaddress.s_addr){
-        printf("SNP´s address doesn't correspond to the address where the application is running");
-    }*/
-
-    //Missing arguments , too many arguments or bad arguments
-    if((argc!=7 && argc!=11) || bad_arguments == 1){
-        printf("Invocar aplicação da seguinte forma ./snp -n surname -s snpip -q snpport [-i saip] [-p saport]\n");
+        printf("SNP´s address doesn't correspond to the address where the application is running\n");
+        printf("Try %s for IP address\n",inet_ntoa(ipaddress));
         exit(1);
     }
 
+    //Missing arguments , too many arguments or bad arguments
+    if((argc!=7 && argc!=11) || bad_arguments == 1){
+        printf("Invocar aplicação da seguinte forma: ./snp -n surname -s snpip -q snpport [-i saip] [-p saport]\n");
+        exit(1);
+    }
 
-    //Printf dos valores
-    strcpy(surname,"Dias");
+    //Print of the values
     printf("SNP:\nSurname: %s\nIP address: %s\nPort: %d\n\n",surname,ip_maquina,porto_maquina);
-    printf("SA:\nIP address: %s\nPort: %d\n\n",ip_servidor,porto_servidor);
+    printf("SA:\nIP address: %s\nPort: %d\n\n",inet_ntoa(ipaddress2),porto_servidor);
     
-    //-----Registo do servidor de nomes,envio da sua localizaçã para o servidor de apelidos-----
-
-    //utilizar o sscanf para criar a mensagem
-
-    strcpy(message,"SREG ferreira;192.168.3.4;50000");
-    printf("1Message:");
+    //Registo do servidor de nomes,envio da sua localizaçã para o servidor de apelidos
+    sprintf(message,"SREG %s;%s;%d",surname,ip_maquina,porto_maquina);
     udp_socket(ipaddress2,porto_servidor,&message);
-    printf("3message:");
 
     //----------------------------------------------//
-//    //Menu Aqui
-//    int afd,fd,result;
-//    fd_set readset;
-//    char opcao[5];
-//
-//    int mudanca=0;
-//    int exit_menu=0;
-//
-//    printf("\nWelcome to the Name Server Interface. Choose an action: \n 1: List\n 2: Exit \n");
-//    do{
-//        FD_ZERO(&readset);
-//        FD_SET(fd,&readset);
-//        if(mudanca==1){FD_SET(afd,&readset);}
-//
-//        result = select(fd+1,&readset,NULL,NULL,NULL);
-//        if(result==-1){printf("error...");}//error
-//        if(FD_ISSET(fd,&readset)){
-//
-//
-//            //Aqui por exemplo fica o Socket server
-//            mudanca=1;
-//        }
-//        if(FD_ISSET(afd,&readset)){
-//            fgets(opcao,5,stdin);
-//            //Aqui menu
-//            if(strcmp(opcao, "list")==1){
-//                printf("Escolheste opção 1");
-//            }else if(strcmp(opcao,"exit")==1){
-//                printf("Escolheste opção 2");
-//                exit_menu=1;
-//            }else{
-//                printf("Write list for option 1 or exit for option 2");
-//            }
-//        }
-//    }while (exit_menu==0);
-//    printf("SA:\nIP address: %s\nPort: %d\n\n",ip_servidor,porto_servidor);
+    //Menu Aqui
+    int afd,fd,maxfd,result;
+    fd_set readset;
+    char opcao[5];
+    
+    int exit_menu=0;
 
-//    //------Remover o servidor de nomes proprios do de apelidos-----
-//
-//    //utilizar o sscanf para criar a mensagem
-//    strcpy(message,"SUNR ferreira");
-//    udp_socket(ipaddress2,porto_servidor,&message);
+    printf("\nWelcome to the Name Server Interface. Choose an action: \n 1: List\n 2: Exit \n");
+    while(exit_menu==0){
+        FD_ZERO(&readset);
+        FD_SET(afd,&readset);
+        //if(mudanca==1){FD_SET(afd,&readset);}
+
+        result = select(maxfd+1,&readset,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
+        if(result==-1)exit(1);//error
+        
+        if(FD_ISSET(fd,&readset)){
+            udp_socket_server();
+        }
+        if(FD_ISSET(afd,&readset)){
+            fgets(opcao,5,stdin);
+            printf("%s",opcao);
+            if(strcmp(opcao, "1")==1){
+                printf("Escolheste opção 1");
+            }else if(strcmp(opcao,"2")==1){
+                printf("Escolheste opção 2");
+                exit_menu=1;
+            }else{
+                printf("Write list for option 1 or exit for option 2");
+            }
+        }
+    }
+    //-----------------------------------------------//
+    
+    //------Remover o servidor de nomes proprios do de apelidos-----
+    sprintf(message,"SUNR %s",surname);
+    udp_socket(ipaddress2,porto_servidor,&message);
 
     /*
 
@@ -240,7 +230,6 @@ int main(int argc, char * argv[]){
     }*/
 
     //Frees
-    free(name_ip_servidor);
     free(message);
 
     exit(0);

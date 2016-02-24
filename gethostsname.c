@@ -20,9 +20,9 @@ struct in_addr getaddressbyname(char** name){
         exit(1);
     }
 
-    printf("Official Host name: %s\n",h->h_name);
+    printf("%s\n",h->h_name);
     a=(struct in_addr*)h->h_addr_list[0];
-    printf("Internet address: %s (%08lX)\n",inet_ntoa(*a),(long unsigned int)ntohl(a->s_addr));
+    printf("%s (%08lX)\n",inet_ntoa(*a),(long unsigned int)ntohl(a->s_addr));
 
     return *a;
 }
@@ -34,7 +34,7 @@ struct in_addr get_host_name(){
 
     if(gethostname(name_ip,128)==-1){
         printf("Error: %s\n",strerror(errno));
-    }else{printf("Host name: %s\n",name_ip);}
+    }else{printf("%s\n",name_ip);}
 
     *a=getaddressbyname(&name_ip);
 
