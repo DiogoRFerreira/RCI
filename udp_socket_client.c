@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 
-void udp_socket(struct in_addr ip,int port,char* message){//Recebe o endereço para onde vai enviar, o ip para onde vai enviar e a mensagem que envia
+void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço para onde vai enviar, o ip para onde vai enviar e a mensagem que envia
     printf("2message:");
     int fd, n;
     socklen_t addrlen;
@@ -25,7 +25,7 @@ void udp_socket(struct in_addr ip,int port,char* message){//Recebe o endereço p
     addr.sin_addr=ip;
     addr.sin_port=htons(port);
 
-    n=sendto(fd,message,7,0,(struct sockaddr*)&addr,sizeof(addr));
+    n=sendto(fd,*message,strlen(*message)+1,0,(struct sockaddr*)&addr,sizeof(addr));
     if(n==-1)exit(1);//error
 
     addrlen=sizeof(addr);

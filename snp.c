@@ -61,14 +61,14 @@ int main(int argc, char * argv[]){
                     bad_arguments=1;
                 }
             }
-
+        }
         //Get the address of Tejo
         strcpy(name_ip_servidor,"tejo.tecnico.ulisboa.pt");     //Omitted values
         ipaddress2 = getaddressbyname(&name_ip_servidor);       //Convert from name to ip
         porto_servidor = 58000;
 
         if(contagem != 3){bad_arguments=1;}              //Wrong arguments
-    }
+    
     //All arguments
     }else if(argc==11){
         for(i=1;i<11;i+=2){
@@ -144,14 +144,14 @@ int main(int argc, char * argv[]){
     strcpy(surname,"Dias");
     printf("SNP:\nSurname: %s\nIP address: %s\nPort: %d\n\n",surname,ip_maquina,porto_maquina);
     printf("SA:\nIP address: %s\nPort: %d\n\n",ip_servidor,porto_servidor);
- printf("0Message");
+    
     //-----Registo do servidor de nomes,envio da sua localizaçã para o servidor de apelidos-----
 
     //utilizar o sscanf para criar a mensagem
 
     strcpy(message,"SREG ferreira;192.168.3.4;50000");
     printf("1Message:");
-    udp_socket(ipaddress2,porto_servidor,message);
+    udp_socket(ipaddress2,porto_servidor,&message);
     printf("3message:");
 
     //----------------------------------------------//
