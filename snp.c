@@ -97,6 +97,7 @@ int main(int argc, char * argv[]){
                     contagem++;
                 }else{
                     printf("Invalid IP Address\n");
+                    bad_arguments=1;
                 }
             }else if(strcmp(argv[i],"-q")==0){//UDP Port
                 if((49151 < atoi(argv[i+1])) && (atoi(argv[i+1])<= 65535)){//Check if the port is valid
@@ -112,6 +113,7 @@ int main(int argc, char * argv[]){
                     contagem++;
                 }else{
                     printf("Invalid IP Address\n");
+                    bad_arguments=1;
                 }
             }else if(strcmp(argv[i],"-p")==0){//Port of surname's server
                 if((49151 < atoi(argv[i+1])) && (atoi(argv[i+1])<= 65535)){//Check if the port is valid
@@ -131,7 +133,7 @@ int main(int argc, char * argv[]){
     compare_address = get_host_name();
     if(compare_address.s_addr!=ipaddress.s_addr){
         printf("SNP´s address doesn't correspond to the address where the application is running\n");
-        printf("Try %s for IP address\n",inet_ntoa(ipaddress));
+        printf("Try %s for IP address\n",inet_ntoa(compare_address));
         exit(1);
     }
 
@@ -151,31 +153,34 @@ int main(int argc, char * argv[]){
 
     //----------------------------------------------//
     //Menu Aqui
-    int afd,fd,maxfd,result;
+    int fd=0,maxfd,result;
     fd_set readset;
-    char opcao[5];
+    char buffer[1];
     
     int exit_menu=0;
 
     printf("\nWelcome to the Name Server Interface. Choose an action: \n 1: List\n 2: Exit \n");
+
     while(exit_menu==0){
         FD_ZERO(&readset);
-        FD_SET(afd,&readset);
-        //if(mudanca==1){FD_SET(afd,&readset);}
-
-        result = select(maxfd+1,&readset,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
+        FD_SET(fd,&readset);
+        FD_SET(fileno(stdin),&readset);
+        maxfd=fd;
+        
+        result = select(maxfd+fileno(stdin)+1,&readset,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
         if(result==-1)exit(1);//error
         
         if(FD_ISSET(fd,&readset)){
             udp_socket_server();
         }
-        if(FD_ISSET(afd,&readset)){
-            fgets(opcao,5,stdin);
-            printf("%s",opcao);
-            if(strcmp(opcao, "1")==1){
-                printf("Escolheste opção 1");
-            }else if(strcmp(opcao,"2")==1){
-                printf("Escolheste opção 2");
+        else if(FD_ISSET(fileno(stdin),&readset)){
+            printf("esta a escrever");
+            fgets(buffer,1,stdin);
+            printf("Mensagem: %s\n",buffer);
+            if(strcmp(buffer, "1")==1){//------LIST------//
+                printf("Escolheste opção list");
+            }else if(strcmp(buffer,"2")==1){//-------EXIT-----//
+                printf("Escolheste opção exit");
                 exit_menu=1;
             }else{
                 printf("Write list for option 1 or exit for option 2");
