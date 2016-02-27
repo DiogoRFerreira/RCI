@@ -5,23 +5,27 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "udp_socket_client.h"
+#include "udp_socket_client_schat.h"
 //#include "gethostsname.h"
+#include <signal.h>
 
 int main(int argc, const char * argv[]) {
     
     int i, j,bad_arguments=0,contagem=0;
     int porto_schat_tcp=0, porto_snp_udp = 0;
-
+    
     char ip_snp[20], ip_schat[20];
-    char name[128],surname[128];
+    char * name,*surname, user_input[64];
     
     struct in_addr ipaddress, ipaddress2;
     
     if(argc==11){
         for(i=1;i<11;i+=2){
             if(strcmp(argv[i],"-n")==0){//name.surname
-                sscanf(argv[i],"%s.%s",name,surname);
+                sscanf(argv[i+1],"%s",user_input);
+                name = (char*)strtok(user_input, ".");
+                surname = (char*)strtok(NULL, " ");
+                printf("Name: %s Surname: %s\n", name, surname);
                 if(strlen(name)>20 || strlen(surname)>20){//Check the lenght of the name and the surname
                     printf("Invalid Name/Surname: Too big...\n");
                     bad_arguments=1;
@@ -79,20 +83,20 @@ int main(int argc, const char * argv[]) {
             }
         }
         if(contagem != 5){bad_arguments=1;}//Wrong arguments
-    
+        
     }
     
     //Check the host's address
     /*struct in_addr compare_address;
-    compare_address = get_host_name();
-    if(compare_address.s_addr!=ipaddress.s_addr){
-        printf("SCHAT´s address doesn't correspond to the address where the application is running\n");
-        printf("Try %s for IP address\n",inet_ntoa(compare_address));
-        exit(1);
-    }
-    */
+     compare_address = get_host_name();
+     if(compare_address.s_addr!=ipaddress.s_addr){
+     printf("SCHAT´s address doesn't correspond to the address where the application is running\n");
+     printf("Try %s for IP address\n",inet_ntoa(compare_address));
+     exit(1);
+     }
+     */
     //Missing arguments , too many arguments or bad arguments
-    if((argc!=11) || bad_arguments == 1){
+    if((argc!=11 || bad_arguments == 1)){
         printf("Invocar aplicação da seguinte forma: ./schat -n name.surname -i ip -p scport -s snpip -q snpport\n");
         exit(1);
     }
@@ -108,49 +112,72 @@ int main(int argc, const char * argv[]) {
     
     fd_set readset;
     struct sockaddr_in addr;
-    int exit_menu=0,fd, result, maxfd;
-    char menu[128];
+    int exit_menu=0,fd_file,fd_socket, result, maxfd;
+    char menu[128], line[128];
     char * message = (char*)malloc(126*sizeof(char));
     
+    //TCP Server bind, listen
+    fd_socket=socket(AF_INET,SOCK_STREAM,0);//TCP socket
+    if(fd_socket==-1)exit(1);//error
+    memset((void*)&addr,(int)'\0',sizeof(addr));
+    addr.sin_family=AF_INET;
+    addr.sin_addr.s_addr=htonl(INADDR_ANY);//Any address can connect
+    addr.sin_port=htons(porto_schat_tcp);//Tcp schat port
+    //Bind
+    if(bind(fd_socket,(struct sockaddr*)&addr,sizeof(addr))==-1)
+        exit(1);//error
+    //Listen
+    if(listen(fd_socket,5)==-1)exit(1);//error
+    
     while(exit_menu==0){
+        
         //TCP Server bind, listen
-        fd=socket(AF_INET,SOCK_STREAM,0);//TCP socket
-        if(fd==-1)exit(1);//error
+        fd_socket=socket(AF_INET,SOCK_STREAM,0);//TCP socket
+        if(fd_socket==-1)exit(1);//error
         memset((void*)&addr,(int)'\0',sizeof(addr));
         addr.sin_family=AF_INET;
         addr.sin_addr.s_addr=htonl(INADDR_ANY);//Any address can connect
         addr.sin_port=htons(porto_schat_tcp);//Tcp schat port
         //Bind
-        if(bind(fd,(struct sockaddr*)&addr,sizeof(addr))==-1)
+        if(bind(fd_socket,(struct sockaddr*)&addr,sizeof(addr))==-1)
             exit(1);//error
         //Listen
-        if(listen(fd,5)==-1)exit(1);//error
-        
+        if(listen(fd_socket,5)==-1)exit(1);//error
+        fd_file = fileno(stdin);
         FD_ZERO(&readset);
-        FD_SET(fd,&readset);
-        FD_SET(fileno(stdin),&readset);
-        maxfd=fd;
+        FD_SET(fd_socket,&readset);
+        FD_SET(fileno(stdin), &readset);
         
-        result = select(maxfd+fileno(stdin)+1,&readset,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
+        result = select(fd_file+fd_socket+1,&readset,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
         if(result==-1)exit(1);//error
         
-        if(FD_ISSET(fileno(stdin),&readset)){
-            if(fgets(menu,128,stdin)){
-                if(strcmp(menu,"join")==0){//-------Join-------//
-                    sprintf(message,"REG %s.%s",name,surname);
-                    udp_socket(ipaddress2, porto_snp_udp,&message);
-                }else if(strcmp(menu,"leave")==0){//------Leave-------//
-                    sprintf(message,"UNR %s.%s",name,surname);
-                    udp_socket(ipaddress2, porto_snp_udp,&message);
-                }else if(strcmp(menu,"exit")==0){//------Exit-------//
-                    exit_menu=1;
-                }else{
-                    printf("Wrong command...");
-                }
+        if(FD_ISSET(fd_file,&readset)){
+            fgets(line,128,stdin);
+            sscanf(line,"%s",menu);
+            if(strcmp(menu,"join")==0){//-------Join-------//
+                sprintf(message,"REG %s.%s;%s;%d",name,surname, ip_schat,porto_schat_tcp);
+                printf("Message sent: %s", message);
+                udp_socket(ipaddress2, porto_snp_udp,&message);
+            }else if(strcmp(menu,"leave")==0){//------Leave-------//
+                sprintf(message,"UNR %s.%s",name,surname);
+                udp_socket(ipaddress2, porto_snp_udp,&message);
+            }else if(strcmp(menu,"exit")==0){//------Exit-------//
+                exit_menu=1;
+            }else{
+                printf("Wrong command...\n");
+                /*
+                 sscanf(menu,"%s %s %s",menu,name_surname,keyfile);
+                 if(strcmp(menu,"find")==0){//----Find------//
+                 udp_socket(ipaddress2, porto_snp_udp,&message);//--receber o valor---//
+                 }
+                 if(strcmp(menu,"connect")==0){//-----Connect-----//
+                 udp_socket(ipaddress2, porto_snp_udp,&message);//--
+                 }
+                 */
             }
         }
-        if(FD_ISSET(fd,&readset)){//Socket tcp
-        
+        if(FD_ISSET(fd_socket,&readset)){//Socket tcp
+            
         }
     }
     //Free
@@ -159,6 +186,10 @@ int main(int argc, const char * argv[]) {
     exit(0);
 }
 
-    
-    
+
+
+
+
+
+
 

@@ -2,6 +2,12 @@
 #define list_h
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
 
 typedef struct element_{
     char ip[20], surname[20], name[20];
@@ -9,8 +15,15 @@ typedef struct element_{
     struct element_ * next;
 }element;
 
-element * add_element(char name[20], char surname[20],char ip[20], element * ptr_to_first);
+element infotoelement(char name[20], char surname[20], char ip[20], int port);
 
-void print_list(element * ptr_to_first);
+element * addElement(element * ptr_to_first, element argElement);
+
+void printList(element * ptr_to_first);
+
+void freeList(element * ptr_to_first);
+
+element * deleteElement(element * ptr_to_first, char name[20], char surname[20]);
+
 
 #endif /* list_h */
