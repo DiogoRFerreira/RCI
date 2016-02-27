@@ -68,7 +68,7 @@ element * udp_socket_server(int fd, struct sockaddr_in addr, socklen_t addrlen){
                             surname = (char*)strtok(NULL, ";");
                             printf("%s\n", surname);
                             previous_ptr_to_first = ptr_to_first;
-                            ptr_to_first = deleteElement(ptr_to_first, name, surname, fd,buffer, addr, addrlen);
+                            ptr_to_first = deleteElement(ptr_to_first, name, surname);
                             if (ptr_to_first!=previous_ptr_to_first) {
                                 printf("Unregistered!\n");
                                 ret=sendto(fd,"OK\n",strlen("OK\n")+1,0,(struct sockaddr*)&addr,addrlen);
@@ -86,7 +86,7 @@ element * udp_socket_server(int fd, struct sockaddr_in addr, socklen_t addrlen){
                                     printf("%s\n", ip);
                                     port = strtol((char*)strtok(NULL, ";"),&end,10);
                                     printf("%d\n", port);
-                                    ptr_to_first=addElement(ptr_to_first,infotoelement(name,surname,ip,port),fd,buffer, addr, addrlen);
+                                    ptr_to_first=addElement(ptr_to_first,infotoelement(name,surname,ip,port));
                                     if(ptr_to_first!=NULL){
                                     printf("Registered!\n");
                                     ret=sendto(fd,"OK\n",strlen("OK\n")+1,0,(struct sockaddr*)&addr,addrlen);
@@ -94,12 +94,13 @@ element * udp_socket_server(int fd, struct sockaddr_in addr, socklen_t addrlen){
                                 }else {
                                     ret=sendto(fd,"NOK - Command not found\n",strlen("NOK - Command not found\n")+1,0,(struct sockaddr*)&addr,addrlen);
                                     printf("NOK - Command not found\n");
-                }    }    }
-
+                                }
+                        }
+        }
         //ret=sendto(fd,buffer,nread,0,(struct sockaddr*)&addr,addrlen);
         if(ret==-1)exit(1);
 
-
+    return ptr_to_first;
 }
 
 
