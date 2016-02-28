@@ -18,7 +18,7 @@ element infotoelement(char name[20], char surname[20], char ip[20], int port) {
 }
 
 // Function to add new elements in an alphabetically sorted way
-element * addElement(element * ptr_to_first, element argElement) {
+element * addElement(element * ptr_to_first, element argElement, int * num_elements_ptr) {
 
 
         element * current, *previous, * new_element = (element*)malloc(sizeof(element));
@@ -35,19 +35,25 @@ element * addElement(element * ptr_to_first, element argElement) {
         if (ptr_to_first==NULL) {           // Check if the list is empty.
             ptr_to_first = new_element;
             new_element->next = NULL;
+            (*num_elements_ptr)++;
             return ptr_to_first;
-        }else {                             // In case it is not empty.
+        }else{                             // In case it is not empty.
             while (current!=NULL) {
-                if ((current->next ==NULL) && (previous==(current))) {      // Check if current is the last AND the only element on the list.
-                     if (strcmp(new_element->name,current->name)>0){                     // Determines if the new element should be placed before or
-                        current->next = new_element;                        // after the current element according to its name.
-                        new_element->next = NULL;
-                     }else {
-                        new_element->next = current;
-                        ptr_to_first = new_element;                        // If it is inserted before, the new head pointer of the list
-                     }                                                      // is now the pointer to the new element.
-                      return ptr_to_first;
-                } else{                                                     // List has multiple elements
+                if(strcmp(new_element->name,current->name)==0 && (strcmp(new_element->surname,current->surname)==0)) {
+                    return ptr_to_first;
+                } else{
+
+                    if ((current->next ==NULL) && (previous==(current))) {      // Check if current is the last AND the only element on the list.
+                         if (strcmp(new_element->name,current->name)>0){        // Determines if the new element should be placed before or
+                            current->next = new_element;                        // after the current element according to its name.
+                            new_element->next = NULL;
+                         }else {
+                            new_element->next = current;
+                            ptr_to_first = new_element;                        // If it is inserted before, the new head pointer of the list
+                         }                                                      // is now the pointer to the new element.
+    (*num_elements_ptr)++;
+return ptr_to_first;
+                    } else{                                                     // List has multiple elements
                          if (strcmp(new_element->name,current->name)>0) {
                             previous = current;
                             if (current->next!=NULL) {                      // If it is NOT the last on the list then continues.
@@ -56,7 +62,7 @@ element * addElement(element * ptr_to_first, element argElement) {
                             } else {
                                 current->next = new_element;
                                 new_element->next = NULL;
-                                return ptr_to_first;
+
                             }
                          }else {                                      // If the new name is smaller than the current name, it adds it before.
                                 new_element->next = current;
@@ -64,39 +70,41 @@ element * addElement(element * ptr_to_first, element argElement) {
                                     ptr_to_first = new_element;
                                 }else{
                                 previous->next = new_element;
-                                }return ptr_to_first;
+                                }
+                                    (*num_elements_ptr)++;
+return ptr_to_first;
 
-                         }
+                        }
+                    }
+                }
             }
         }
-        }
+
 return ptr_to_first;
 }
 
 // Function to delete one entry [name surname]
-element * deleteElement(element * ptr_to_first, char name[20], char surname[20]){
+element * deleteElement(element * ptr_to_first, char name[20], char surname[20], int * num_elements_ptr){
     element * previous, *current = ptr_to_first;
     previous = current;
     while (current!=NULL) {
         if (strcmp(current->name,name)==0 && strcmp(current->surname,surname)==0) {
             if (current->next==NULL && previous==current) {
                 ptr_to_first = NULL;
-                free(current);
-                return ptr_to_first;
             }else {
                 if (previous==current){
                     ptr_to_first = current->next;
-                    free(current);
-                    return ptr_to_first;
                 }else {
                     previous->next = current->next;
-                    free(current);
-                    return ptr_to_first;
                 }
             }
-        }
+            (*num_elements_ptr)--;
+            free(current);
+            return ptr_to_first;
+        }else{
         previous = current;
         current = current->next;
+        }
     }
     return ptr_to_first;
 }
@@ -124,7 +132,7 @@ void printList(element * ptr_to_first) {
         printf("Empty list!\n");
     }else {
         while (current!=NULL) {
-            printf("%s\n", current->name);
+            printf("%s %s %s %d\n", current->name, current->surname, current->ip, current->port);
             current=current->next;
         }
     }

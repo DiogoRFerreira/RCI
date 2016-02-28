@@ -17,13 +17,13 @@ typedef struct element_{
 
 element infotoelement(char name[20], char surname[20], char ip[20], int port);
 
-element * addElement(element * ptr_to_first, element argElement);
+element * addElement(element * ptr_to_first, element argElement, int * num_elements_ptr);
 
 void printList(element * ptr_to_first);
 
 void freeList(element * ptr_to_first);
 
-element * deleteElement(element * ptr_to_first, char name[20], char surname[20]);
+element * deleteElement(element * ptr_to_first, char name[20], char surname[20], int * num_elements_ptr);
 
 
 #endif /* list_h */

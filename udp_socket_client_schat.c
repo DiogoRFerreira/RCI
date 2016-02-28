@@ -1,4 +1,4 @@
-#include "udp_socket_client.h"
+#include "udp_socket_client_schat.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,7 +31,7 @@ void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço p
 
     n=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,&addrlen);
     if(n==-1)exit(1);//error
-    
+
     write(1,"Message received: ",18);//stdout
     write(1,buffer,n);
     printf("\n");
@@ -59,7 +59,7 @@ void udp_socket_server(){
     while(1){addrlen=sizeof(addr);
         nread=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,&addrlen);
         if(nread==-1)exit(1);//error
-        
+
         //------Registo do utilizador----
         //UNR name.surname
         //REG name.surname;ip;scport
