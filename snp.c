@@ -20,13 +20,13 @@ int getMax(int a, int b) {
 int main(int argc, char * argv[]){
     element * ptr_to_first=NULL;
     int i,j,bad_arguments=0, contagem=0; //Integers to check the arguments
-    int porto_maquina = 0,porto_servidor = 0;//Port variables
+    int snp_port = 0,porto_servidor = 0;//Port variables
     char surname[20], ip_maquina[20], ip_servidor[20];//IP variables
 
     char * name_ip_servidor = (char*)malloc(126*sizeof(char));//Cuidado com o free
     char * message = (char*)malloc(126*sizeof(char));
 
-    struct in_addr ipaddress, ipaddress2;
+    struct in_addr ipaddress, ipaddress_sa;
 
     //Check the application's arguments
 
@@ -61,7 +61,7 @@ int main(int argc, char * argv[]){
                 }
             }else if(strcmp(argv[i],"-q")==0){//UDP Port, valor dos portos está entre 1024 e 65535 (valor máximo é 65535 2^16-1 16 bits)  1024–49151 portos registados acima de 49151 are called dynamic and/or private ports
                 if((49151 < atoi(argv[i+1])) && (atoi(argv[i+1])<= 65535)){//Check if the port is valid
-                    porto_maquina=atoi(argv[i+1]);
+                    snp_port=atoi(argv[i+1]);
                     contagem++;
                 }else{
                     printf("Invalid Port: Value of Port must be between 49151 and 65535\n");
@@ -71,7 +71,7 @@ int main(int argc, char * argv[]){
         }
         //Get the address of Tejo
         strcpy(name_ip_servidor,"tejo.tecnico.ulisboa.pt");//Omitted values
-        ipaddress2 = getaddressbyname(&name_ip_servidor);//Convert from name to ip
+        ipaddress_sa = getaddressbyname(&name_ip_servidor);//Convert from name to ip
         porto_servidor = 58000;
 
         if(contagem != 3){bad_arguments=1;}//Wrong arguments
@@ -107,14 +107,14 @@ int main(int argc, char * argv[]){
                 }
             }else if(strcmp(argv[i],"-q")==0){//UDP Port
                 if((49151 < atoi(argv[i+1])) && (atoi(argv[i+1])<= 65535)){//Check if the port is valid
-                    porto_maquina=atoi(argv[i+1]);
+                    snp_port=atoi(argv[i+1]);
                     contagem++;
                 }else{
                     printf("Invalid Port: Value of Port must be between 49151 and 65535\n");
                     bad_arguments=1;
                 }
             }else if(strcmp(argv[i],"-i")==0){//IP address of surname's server
-                if(inet_pton(AF_INET,argv[i+1],&(ipaddress2.s_addr))==1){//Check if the ip is valid
+                if(inet_pton(AF_INET,argv[i+1],&(ipaddress_sa.s_addr))==1){//Check if the ip is valid
                     strcpy(ip_servidor, argv[i+1]);
                     contagem++;
                 }else{
@@ -149,20 +149,20 @@ int main(int argc, char * argv[]){
     }
 
     //Print of the values
-    printf("SNP:\nSurname: %s\nIP address: %s\nPort: %d\n\n",surname,ip_maquina,porto_maquina);
-    printf("SA:\nIP address: %s\nPort: %d\n\n",inet_ntoa(ipaddress2),porto_servidor);
+    printf("SNP:\nSurname: %s\nIP address: %s\nPort: %d\n\n",surname,ip_maquina,snp_port);
+    printf("SA:\nIP address: %s\nPort: %d\n\n",inet_ntoa(ipaddress_sa),porto_servidor);
 
     //Registo do servidor de nomes,envio da sua localizaçã para o servidor de apelidos
-    sprintf(message,"SREG %s;%s;%d",surname,ip_maquina,porto_maquina);
-    udp_socket(ipaddress2,porto_servidor,&message);
+    sprintf(message,"SREG %s;%s;%d",surname,ip_maquina,snp_port);
+    udp_socket(ipaddress_sa,porto_servidor,&message);
 
     //----------------------------------------------//
     //Menu Aqui
-    struct sockaddr_in addr;
+    struct sockaddr_in addr, addr2;
     socklen_t addrlen;
-    int afd,fd_file,fd_socket,result, ret, num_elements=0;
+    int afd,fd_file,fd_socket_schat, fd_socket_snp,result, ret, num_elements=0;
     int *num_elements_ptr= &num_elements;
-
+    element found_element;
     int prev_num_elements=0;
     fd_set readset;
     char option[32], user_input[32];
@@ -171,16 +171,15 @@ int main(int argc, char * argv[]){
 
     printf("\nWelcome to the Name Server Interface. Choose an action: \n 1: List\n 2: Exit \n");
 
-
-    if((fd_socket=socket(AF_INET,SOCK_DGRAM,0))==-1)exit(1);//error
+    if((fd_socket_schat = socket(AF_INET,SOCK_DGRAM,0))==-1)exit(1); //error
 
     memset((void*)&addr,(int)'\0',sizeof(addr));
     addr.sin_family=AF_INET;
     addr.sin_addr.s_addr=htonl(INADDR_ANY);
-    addr.sin_port=htons(50000);
+    addr.sin_port=htons(snp_port);
 
     //Bind
-    ret=bind(fd_socket,(struct sockaddr*)&addr,sizeof(addr));
+    ret=bind(fd_socket_schat,(struct sockaddr*)&addr,sizeof(addr));
     if(ret==-1)exit(1);
 
     addrlen = sizeof(addr);
@@ -188,17 +187,19 @@ int main(int argc, char * argv[]){
     element * previous_ptr_to_first = ptr_to_first;
 
     while(exit_menu==0){
+        prev_num_elements=num_elements;
+
         fd_file = fileno(stdin);
         FD_ZERO(&readset);
-        FD_SET(fd_socket,&readset);
+        FD_SET(fd_socket_schat,&readset);
         FD_SET(fileno(stdin), &readset);
 
-        result = select(fd_file+fd_socket+1,&readset,NULL,NULL,NULL);
+        result = select(fd_file+fd_socket_schat+1,&readset,NULL,NULL,NULL);
         if(result==-1)exit(1);//error
 
         printf("Result: %d\n", result);
 
-        if(FD_ISSET(fd_file,&readset)){
+        if(FD_ISSET(fd_file,&readset)) {
             fgets(option,32,stdin);
             sscanf(option, "%s", user_input);
             if (strcmp(user_input,"exit")==0){
@@ -213,24 +214,25 @@ int main(int argc, char * argv[]){
                 }
             }
         }
-        if(FD_ISSET(fd_socket,&readset)){
-            prev_num_elements=num_elements;
-            ptr_to_first=udp_socket_server(ptr_to_first,num_elements_ptr, fd_socket, addr, addrlen);
-            if (prev_num_elements!=num_elements) {
+
+        if(FD_ISSET(fd_socket_schat,&readset)) {
+
+            ptr_to_first = udp_socket_server(ptr_to_first,num_elements_ptr, fd_socket_schat,addr,ipaddress_sa);
+            /*if (prev_num_elements!=num_elements && ptr_to_first!=previous_ptr_to_first) {
                 printf("New Register!\n");
+                prev_num_elements=num_elements;
             }else{
-                printf("Name/Surname already in use\n");
-                }
+                printf("Name/Surname already in use prev:%d     current %d\n", prev_num_elements, num_elements);
+                }*/
 
         }
-    }
-
+		}
 
     //-----------------------------------------------//
 
     //------Remover o servidor de nomes proprios do de apelidos-----
     sprintf(message,"SUNR %s",surname);
-    udp_socket(ipaddress2,porto_servidor,&message);
+    udp_socket(ipaddress_sa,porto_servidor,&message);
 
     /*
 

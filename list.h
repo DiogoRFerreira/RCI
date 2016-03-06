@@ -15,7 +15,11 @@ typedef struct element_{
     struct element_ * next;
 }element;
 
-element infotoelement(char name[20], char surname[20], char ip[20], int port);
+element infotoelement2(char surname[], char ip[], int port);
+
+element infotoelement(char name[], char surname[], char ip[], int port);
+
+element *CheckInList(element * ptr_to_first, char name[20], char surname[20]);
 
 element * addElement(element * ptr_to_first, element argElement, int * num_elements_ptr);
 

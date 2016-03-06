@@ -8,13 +8,41 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-element infotoelement(char name[20], char surname[20], char ip[20], int port) {
+element infotoelement2(char surname[], char ip[], int port) {
+    element new_element;
+    strcpy(new_element.surname, surname);
+    strcpy(new_element.ip, ip);
+    new_element.port = port;
+    return new_element;
+}
+
+element infotoelement(char name[], char surname[], char ip[], int port) {
     element new_element;
     strcpy(new_element.name, name);
     strcpy(new_element.surname, surname);
     strcpy(new_element.ip, ip);
     new_element.port = port;
     return new_element;
+}
+
+
+
+element * CheckInList(element * ptr_to_first, char name[20], char surname[20]){
+
+    element * current = ptr_to_first;
+
+    if (current==NULL) {
+        printf("Empty list => Not on the list\n");
+    }else {
+        while (current!=NULL) {
+            if((strcmp(current->name,name) == 0) && (strcmp(current->surname,surname)==0)) {
+                return current;
+            }
+            current=current->next;
+        }
+
+    }
+    return NULL;
 }
 
 // Function to add new elements in an alphabetically sorted way

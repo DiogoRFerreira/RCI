@@ -9,8 +9,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+element * udp_socket2(struct in_addr ip,int port,char** message);
+
 void udp_socket(struct in_addr ip,int port,char** message);
 
-element * udp_socket_server(element * ptr_to_first, int * num_elements_ptr, int fd, struct sockaddr_in addr, socklen_t addrlen);
+element * udp_socket_sa(struct in_addr ip_sa,int port, char surname[20], char name[20]);
+
+element * udp_socket_server(element * ptr_to_first, int * num_elements_ptr, int fd, struct sockaddr_in addr, struct in_addr ip_sa);
 
 #endif /* udp_socket_client_h */
