@@ -79,8 +79,8 @@ element * addElement(element * ptr_to_first, element argElement, int * num_eleme
                             new_element->next = current;
                             ptr_to_first = new_element;                        // If it is inserted before, the new head pointer of the list
                          }                                                      // is now the pointer to the new element.
-    (*num_elements_ptr)++;
-return ptr_to_first;
+                        (*num_elements_ptr)++;
+                        return ptr_to_first;
                     } else{                                                     // List has multiple elements
                          if (strcmp(new_element->name,current->name)>0) {
                             previous = current;

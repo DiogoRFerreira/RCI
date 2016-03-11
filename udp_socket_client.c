@@ -12,11 +12,12 @@
 
 
 element * udp_socket2(struct in_addr ip,int port,char** message){//Recebe o endereço para onde vai enviar, o ip para onde vai enviar e a mensagem que envia
-    int fd, n;
+    int fd;
+    long int n;
     socklen_t addrlen;
     struct sockaddr_in addr;
     char buffer[128], * a_name, *a_surname, *a_ip, *end, command[64], info[64];
-    int a_port;
+    long int a_port;
     element * p_element, a_element;
 
     fd=socket(AF_INET,SOCK_DGRAM,0);//UDP socket
@@ -58,7 +59,8 @@ element * udp_socket2(struct in_addr ip,int port,char** message){//Recebe o ende
 }
 
 void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço para onde vai enviar, o ip para onde vai enviar e a mensagem que envia
-    int fd, n;
+    int fd;
+    long int n;
     socklen_t addrlen;
     struct sockaddr_in addr;
     char buffer[128];
@@ -88,12 +90,13 @@ void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço 
 }
 
 element *udp_socket_sa(struct in_addr ip_sa,int port, char surname[20], char name[20]){//Recebe o endereço para onde vai enviar, o ip para onde vai enviar e a mensagem que envia
-    int fd,n, r_port=0;
+    int fd;
+    long int n, r_port=0;
     socklen_t addrlen;
     struct sockaddr_in addr, addr_snp2;
-    char buffer[128], command[32], info[64], message[128], * end, *r_name=NULL, *r_surname, *r_ip, *buffer_2;
+    char buffer[128], command[32], info[64], message[128], * end, *r_surname, *r_ip;
     char * message_to_snp = (char*)malloc(126*sizeof(char));
-    element *p_element, a_element;
+    element *p_element;
 
     sprintf(message,"SQRY %s\n", surname);
 
@@ -131,7 +134,7 @@ element *udp_socket_sa(struct in_addr ip_sa,int port, char surname[20], char nam
             r_ip=(char*)strtok(NULL, ";");
             r_port = strtol((char*)strtok(NULL, ";"),&end,10);
 
-            printf("Received from SA: %s %s : %d\n", r_surname, r_ip, r_port);
+            printf("Received from SA: %s %s : %lu \n", r_surname, r_ip, r_port);
 
             inet_aton(r_ip, &addr_snp2.sin_addr);
             sprintf(message_to_snp,"QRY %s.%s",name,surname);
@@ -151,32 +154,34 @@ element *udp_socket_sa(struct in_addr ip_sa,int port, char surname[20], char nam
 
 element * udp_socket_server(element * ptr_to_first, int * num_elements_ptr, int fd, struct sockaddr_in addr, struct in_addr ip_sa){
 
-    int ret, nread, prev_num_elements=*num_elements_ptr;
-    element *previous_ptr_to_first, elem, *found_element, *a_element;
-    previous_ptr_to_first = ptr_to_first;
+    int prev_num_elements=*num_elements_ptr;
+    long int ret, nread;
+    element *found_element, *a_element;
+    //element * previous_ptr_to_first;
+    //previous_ptr_to_first = ptr_to_first;
 
     char buffer[128], message[128];
 
-    socklen_t addrlen, addrlen_sa;
+    socklen_t addrlen;
     addrlen=sizeof(addr);
 
     nread=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,&addrlen);
     if(nread==-1)exit(1);//error
 
-    char message_out[64], user_input[20], *name, *surname, *ip;
-    char cmpx_string[100], *parte, *end;
-    int port;
+    char user_input[20], *name, *surname, *ip;
+    char cmpx_string[100], *end;
+    long int port;
 
-    struct hostent *hostp; /* client host info */
-    char *hostaddrp; /* dotted decimal host addr string */
-      struct sockaddr_in clientaddr; /* client addr */
+  //struct hostent *hostp; /* client host info */
+    //char *hostaddrp; /* dotted decimal host addr string */
+      //struct sockaddr_in clientaddr; /* client addr */
 
     /*
      * gethostbyaddr: determine who sent the datagram
      */
 
 
-        printf("server received %d/%d bytes: %s\n", strlen(buffer), nread, buffer);
+        //printf("server received %d/%d bytes: %s\n", strlen(buffer), nread, buffer);
 
     sscanf(buffer,"%s %s", user_input, cmpx_string);
 
@@ -188,13 +193,14 @@ element * udp_socket_server(element * ptr_to_first, int * num_elements_ptr, int 
                 surname = (char*)strtok(NULL, "\0");
                 found_element=CheckInList(ptr_to_first, name, surname); // Verifica se o corrente SNP tem o nome completo pretendido
                 if (found_element==NULL) {
+
                     //ret=sendto(fd,"Name.Surname not found on SNP. Querying SA...\n",strlen("Name.Surname not found on SNP. Querying SA...\n")+1,0,(struct sockaddr*)&addr,addrlen);
                     a_element = udp_socket_sa(ip_sa,58000, surname, name);
                     if (a_element==NULL) {
                         printf("Should have sent a message to schat!");
                         ret=sendto(fd,"Surname not found on SA\n",strlen("Surname not found on SA\n")+1,0,(struct sockaddr*)&addr,addrlen);
                     }else{
-                    sprintf(message,"Surname Found on SA and SNP: %s;%s;%d\n", a_element->surname, a_element->ip, a_element->port);
+                    sprintf(message,"INFO %s.%s;%s;%d\n", a_element->name,a_element->surname, a_element->ip, a_element->port);
 
                     ret=sendto(fd,message,strlen(message)+1,0,(struct sockaddr*)&addr,addrlen);
                     }
@@ -226,7 +232,7 @@ element * udp_socket_server(element * ptr_to_first, int * num_elements_ptr, int 
                             ip = (char*)strtok(NULL, ";");
                             printf("%s\n", ip);
                             port = strtol((char*)strtok(NULL, ";"),&end,10);
-                            printf("%d\n", port);
+                            printf("%lu\n", port);
 
                             ptr_to_first=addElement(ptr_to_first,infotoelement(name,surname,ip,port), num_elements_ptr);
                             if(*num_elements_ptr!=prev_num_elements){

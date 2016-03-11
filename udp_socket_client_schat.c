@@ -9,8 +9,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-
-void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço para onde vai enviar, o ip para onde vai enviar e a mensagem que envia
+element * udp_socket(struct in_addr ip,int port,char** message, int action){//Recebe o endereço para onde vai enviar, o ip para onde vai enviar e a mensagem que envia
     int fd;
     long n;
     socklen_t addrlen;
@@ -30,7 +29,7 @@ void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço p
     if(n==-1)exit(1);//error
 
     addrlen=sizeof(addr);
-
+    printf("On udp socket...\n");
     n=recvfrom(fd,buffer,128,0,(struct sockaddr*)&addr,&addrlen);
     if(n==-1)exit(1);//error
 
@@ -38,7 +37,34 @@ void udp_socket(struct in_addr ip,int port,char** message){//Recebe o endereço p
     write(1,buffer,n);
     printf("\n");
     close(fd);
-    return;
+    if (action==1){
+            printf("Action = 1\n");
+            return strtoelem(buffer);   // Caso do find
+    }else{return NULL;}
 
 }
+
+
+element * strtoelem(char buffer[]) {
+    long a_port;
+    element * p_element, a_element;
+    char * a_name, *a_surname, *a_ip, *end, command[64], info[64];
+
+    printf("%s", buffer);
+    if(strncmp(buffer, "INFO", 4)==0) {
+        sscanf(buffer,"%s %s", command, info);
+        printf("%s %s", command, info);
+        a_name = (char*)strtok(info, ".");
+        a_surname = (char*)strtok(NULL, ";");
+        a_ip = (char*)strtok(NULL, ";");
+        a_port = strtol((char*)strtok(NULL, ";"),&end,10);
+        a_element = infotoelement(a_name, a_surname, a_ip, a_port);
+
+        p_element = &a_element;
+        printf("To be added to list: %s.%s;%s;%lu\n",a_name, a_surname, a_ip,a_port);
+        return p_element;
+
+    }else {return NULL;}
+}
+
 

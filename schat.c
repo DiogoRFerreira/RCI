@@ -11,13 +11,14 @@
 //#include "gethostsname.h"
 #include <signal.h>
 
+
 int main(int argc, const char * argv[]) {
 
     int i, j,bad_arguments=0,contagem=0;
     int porto_schat_tcp=0, porto_snp_udp = 0;
 
     char ip_snp[20], ip_schat[20], keyfile[64], name_surname[64] ;
-    char * name,*surname, user_input[64];
+    char * name=NULL,*surname=NULL, user_input[64];
 
     struct in_addr ipaddress, ipaddress_snp;
 
@@ -116,10 +117,15 @@ int main(int argc, const char * argv[]) {
     fd_set readset;
     struct sockaddr_in addr;
     socklen_t addrlen;
-    int exit_menu=0,fd_file, result, fd_tcp, msg_rcv_f=0, nbytes, nleft, nw;
-    long newfd, afd ,nwritten ,n;
-    char menu[128], menu2[64], line[128], *a_name, *a_surname, msg_w[128], *ptr, buffer[128];
+    int exit_menu=0,fd_file, result, fd_tcp, afd=0, msg_rcv_f=0, newfd, join_f=0; long nbytes, nleft, nwritten, n;
+    char menu2[64], line[128], *a_name, *a_surname, *ptr, buffer[128], *ptr3, *keyfile_p;
     enum {idle,busy} state;
+    element * p_element=NULL, *ptr_to_first=NULL;
+    int num_elements=0;
+    int *num_elements_ptr= &num_elements;
+    //int prev_num_elements=*num_elements_ptr;
+    int auth_f=0, auth_success=0;
+    //prev_num_elements=0;
 
     char * message = (char*)malloc(126*sizeof(char));
 
@@ -131,6 +137,7 @@ int main(int argc, const char * argv[]) {
     addr.sin_addr.s_addr=htonl(INADDR_ANY);//Any address can connect
     addr.sin_port=htons(porto_schat_tcp);//Tcp schat port
     //Bind
+    printf("Porto de listen: %d\n", porto_schat_tcp);
     if(bind(fd_tcp,(struct sockaddr*)&addr,sizeof(addr))==-1)
         exit(1);//error
     //Listen
@@ -143,39 +150,65 @@ int main(int argc, const char * argv[]) {
 
         FD_ZERO(&readset);
         FD_SET(fd_tcp,&readset);
-        FD_SET(fileno(stdin), &readset);
+        if(state==busy){FD_SET(afd,&readset);}
+        FD_SET(fd_file, &readset);
 
-        result = select(fd_file+fd_tcp+1,&readset,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
+        if(state==busy){result = select(fd_file+fd_tcp+afd+1,&readset,NULL,NULL,NULL);
+        }else{result = select(fd_file+fd_tcp+1,&readset,NULL,NULL,NULL);}
+
         if(result==-1)exit(1);//error
 
         if(FD_ISSET(fd_file,&readset)){
+            printf("--Reading from keyboard...\n");
             fgets(line,128,stdin);
-            sscanf(line,"%s",menu);
-            if(strcmp(menu,"join")==0){//-------Join-------//
+            printf("line: %s\n",line);
+            if((strncmp(line,"join",strlen("join"))==0) && (join_f == 0)){//-------Join-------//
                 sprintf(message,"REG %s.%s;%s;%d",name,surname, ip_schat,porto_schat_tcp);
                 printf("Message sent: %s", message);
-                udp_socket(ipaddress_snp, porto_snp_udp,&message);
-            }else if(strcmp(menu,"leave")==0){//------Leave-------//
+                udp_socket(ipaddress_snp, porto_snp_udp,&message, 0);
+                join_f = 1;
+            }else if((strncmp(line,"leave", strlen("leave"))==0) && (join_f==1)){//------Leave-------//
                 sprintf(message,"UNR %s.%s",name,surname);
-                udp_socket(ipaddress_snp, porto_snp_udp,&message);
-            }else if(strcmp(menu,"exit")==0){//------Exit-------//
+                udp_socket(ipaddress_snp, porto_snp_udp,&message,0);
+                join_f = 0;
+            }else if(strcmp(line,"exit")==0){//------Exit-------//
                 close(fd_tcp);
                 exit_menu=1;
-            }else if(strncmp(menu,"disconnect",strlen("disconnect"))==0){//------Disconnect-------//
+            }else if(strncmp(line,"disconnect",strlen("disconnect"))==0){//------Disconnect-------//
                 if(state==busy) {
                     close(afd);
                     state=idle;
                 }else{
                     printf("No schat to disconnect from! (Not connected to any schat)\n");
                 }
-            }else if(strncmp(menu,"message",strlen("message"))==0){
+            }else if(strncmp(line,"message",strlen("message"))==0){
                 if (state == busy){
-                    sscanf(line,"%s %s", menu, msg_w);
+                    ptr3=(char*)strtok(line, " ");
+                    ptr3=(char*)strtok(NULL, "\0");
+                    //sscanf(line,"%s %s", menu, msg_w);
+                     printf("Message detected to be sent: %s\n", ptr3);
                     msg_rcv_f = 1;
+
+                    if (msg_rcv_f==1){
+                      ptr=strcpy(buffer,ptr3); nbytes=strlen(ptr3); nleft=nbytes;
+                      printf("--writing message to other party...\n");
+                      while(nleft>0){
+                        printf("...");
+                        nwritten=write(afd,ptr,nleft);
+                        if(nwritten<=0)exit(1);//error
+                        nleft-=nwritten;  ptr+=nwritten;
+                      }
+                      printf("\n");
+                      nleft=nbytes; ptr=buffer;
+                      msg_rcv_f=0;
+                  }
+
+
+
                 }else {
                     printf("Not connected to any schat\n");
                 }
-            }else{
+            }else {
               printf("Line: %s\n", line);
               sscanf(line,"%s %s %s",menu2, name_surname, keyfile);
              // printf("Find [MENU|NAMESURNAME|KEYFILE]:   %s %s %s\n", menu2, name_surname, keyfile);
@@ -183,18 +216,34 @@ int main(int argc, const char * argv[]) {
               a_name=(char*)strtok(name_surname, ".");
               a_surname=(char*)strtok(NULL, " ");
 
-              if(strncmp(menu,"connect", strlen("connect"))==0){
+              if(strncmp(line,"connect", strlen("connect"))==0){
                 //sscanf(line,"%s %s",menu2, message_chat);
                 //Verificar se está na lista, usar udp_socket com retorno do elemento
                 // Verificar se já está ligado a alguém
-                struct in_addr ipaddress_connect;
-                inet_pton(AF_INET,"192.168.1.3",&(ipaddress_connect.s_addr));
-                tcp_connect(ipaddress_connect, 51001);
+                if((p_element=CheckInList(ptr_to_first, a_name, a_surname))!=NULL){
 
+                    printf("Entrou no connect!\n");
+                    struct in_addr ipaddress_connect;
+                    inet_pton(AF_INET,p_element->ip,&(ipaddress_connect.s_addr));
+                    if((tcp_connect(ipaddress_connect, p_element->port,keyfile, a_name,a_surname)==-1)){
+                      printf("Authentication failed! Closing connection...\n");
+                    }
+                    printf("Saiu do connect!\n");
+
+                }else{printf("Element not found on cache. Please do a find first.\n");}
               }else if(strcmp(menu2,"find")==0){    //-----Find----//
-                  //printf("Find [NAME.SURNAME]:   %s.%s\n", a_name,a_surname);
+
+                  printf("Find [NAME.SURNAME]:   %s.%s\n", a_name,a_surname);
                   sprintf(message,"QRY %s.%s",a_name,a_surname);
-                  udp_socket(ipaddress_snp, porto_snp_udp,&message);
+                  if ((p_element = udp_socket(ipaddress_snp, porto_snp_udp,&message, 1))!=NULL){
+                    printf("Retornou elemento!\n");
+                    ptr_to_first = addElement(ptr_to_first, *p_element, num_elements_ptr);
+                  }else{
+                  printf("Retornou NULL");
+                  }
+
+            }else if(strcmp(menu2,"print")==0){    //-----Find----/
+                printList(ptr_to_first);
 
               }else{
 
@@ -203,38 +252,57 @@ int main(int argc, const char * argv[]) {
 
             }
         }
+
         if(FD_ISSET(fd_tcp,&readset)){ //Socket tcp
+            printf("Activity on socket fd_tcp...\n");
           if((newfd=accept(fd_tcp,(struct sockaddr*)&addr,&addrlen))==-1)exit(1);//error
+            printf("Connection accepted!\n");
             switch(state)
             {
-              case idle: afd = newfd; state=busy; break;
+              case idle: afd = newfd; state=busy; printf("Server was in idle state  msg_rcv = [%d]   afd [%d]      fd_tcp [%d]\n", msg_rcv_f, afd, fd_tcp);
+               break;
               case busy: ptr=strcpy(buffer,"Busy!\n");
                         nbytes=6;
                         nleft=nbytes;
                         while(nleft>0){
-                            nwritten=write(fd_tcp,ptr,nleft);
+                            nwritten=write(newfd,ptr,nleft);
                             if(nwritten<=0)exit(1);//error
                             nleft-=nwritten;
                             ptr+=nwritten;
                         }
-              close(newfd); break;
+                        close(newfd);
+                        printf("Server is in busy state\n");
+                        break;
             }
         }
 
-        if(FD_ISSET(afd,&readset)) {
+
+        if((state==busy) && (FD_ISSET(afd,&readset)))   {
+            printf("--Afd activated... msg_rcv_f = %d \n", msg_rcv_f);
+           if(auth_f==0){
+            keyfile_p = read_tcp(afd);
+            printf("Keyfile received from NAME: [%s]\n", keyfile_p);
+            if((auth_success=authentication_client(addr,keyfile_p,afd))==-1){
+              printf("Authentication failed! Closing connection...\n");
+              close(afd);
+              state=idle;
+            }else{
+              auth_f=1;
+              printf("Authentication succeeded! You can start to chat.\n");
+            }
+           }else{
+
            if((n=read(afd,buffer,128))!=0){
+              printf("--Reading from socket...\n");
               if(n==-1)exit(1);//error
                 write(1,"Message received: ", 18);
                 write(1, buffer, n);
-           }else{
-              if(msg_rcv_f==1){
-                if((nw=write(afd,msg_w,128))<=0){
-                    if (nw<=0)exit(1); //error
-                    msg_rcv_f=0;
-                }
-              }
-             close(afd); state=idle;
-           }//connection closed by peer
+                write(1,"\n",1);
+           }
+           printf("--Exiting afd sokcet if...\n");
+           //connection closed by peer
+           }
+
         }
     }
     //Fre

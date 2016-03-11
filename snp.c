@@ -158,12 +158,11 @@ int main(int argc, char * argv[]){
 
     //----------------------------------------------//
     //Menu Aqui
-    struct sockaddr_in addr, addr2;
-    socklen_t addrlen;
-    int afd,fd_file,fd_socket_schat, fd_socket_snp,result, ret, num_elements=0;
+    struct sockaddr_in addr;
+
+    int fd_file,fd_socket_schat,result, ret, num_elements=0;
     int *num_elements_ptr= &num_elements;
-    element found_element;
-    int prev_num_elements=0;
+    //int prev_num_elements=0;
     fd_set readset;
     char option[32], user_input[32];
 
@@ -182,12 +181,11 @@ int main(int argc, char * argv[]){
     ret=bind(fd_socket_schat,(struct sockaddr*)&addr,sizeof(addr));
     if(ret==-1)exit(1);
 
-    addrlen = sizeof(addr);
     printf("Waiting for connections ...\n");
-    element * previous_ptr_to_first = ptr_to_first;
+    //element * previous_ptr_to_first = ptr_to_first;
 
     while(exit_menu==0){
-        prev_num_elements=num_elements;
+        //prev_num_elements=num_elements;
 
         fd_file = fileno(stdin);
         FD_ZERO(&readset);
