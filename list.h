@@ -11,17 +11,17 @@
 
 typedef struct element_{
     char ip[20], surname[20], name[20];
-    int port;
+    long port;
     struct element_ * next;
 }element;
 
-element infotoelement2(char surname[], char ip[], int port);
+element * infotoelement2(char surname[], char ip[], int port);
 
-element infotoelement(char name[], char surname[], char ip[], int port);
+element * infotoelement(char name[], char surname[], char ip[], int port);
 
 element *CheckInList(element * ptr_to_first, char name[20], char surname[20]);
 
-element * addElement(element * ptr_to_first, element argElement, int * num_elements_ptr);
+element * addElement(element * ptr_to_first, element * argElement, int * num_elements_ptr);
 
 void printList(element * ptr_to_first);
 

@@ -5,33 +5,35 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
-
 #include  <sys/types.h> //fork include
 #include <sys/time.h> //select
 #include <unistd.h> //select
 
-int getMax(int a, int b) {
-    int c = a - b;
-    int k = (c >> 31) & 0x1;
-    int max = a - k * c;
-    return max;
-}
+//	Error code (system calls):
+//				-1:	Bad Arguments
+//				 1: Socket
+//				 2: Bind
+//				 3: Select
+// 				 4: Sendto [Function: udp_socket_server, file: udp_socket_client.c]
 
+#define max(A,B) ((A)>=(B)?(A):(B))
 int main(int argc, char * argv[]){
+	//Pointer to
     element * ptr_to_first=NULL;
-    int i,j,bad_arguments=0, contagem=0; //Integers to check the arguments
-    int snp_port = 0,porto_servidor = 0;//Port variables
-    char surname[20], ip_maquina[20], ip_servidor[20];//IP variables
-
-    char * name_ip_servidor = (char*)malloc(126*sizeof(char));//Cuidado com o free
+    //Integers to check the arguments
+    int i,j,bad_arguments=0, contagem=0;
+    //Port variables
+    int snp_port = 0,porto_servidor = 0;
+    //IP variables, Surname, Message
+    char * ip_servidor = (char*)malloc(20*sizeof(char));
+    char * ip_maquina = (char*)malloc(20*sizeof(char));
+    char * surname = (char*)malloc(30*sizeof(char));
+    char * name_ip_servidor = (char*)malloc(126*sizeof(char));
     char * message = (char*)malloc(126*sizeof(char));
-
+	//Addresses
     struct in_addr ipaddress, ipaddress_sa;
-
     //Check the application's arguments
-
-    //saip and saport omitted, argc=7 (snp -n surname -s snpip -q snpport)
-    if(argc==7){
+    if(argc==7){//saip and saport omitted, argc=7 (snp -n surname -s snpip -q snpport)
         for(i=1;i<7;i+=2){
             if(strcmp(argv[i],"-n")==0){//Surname
                 if(strlen(argv[i+1])>20){//Check the lenght of the surname
@@ -49,6 +51,7 @@ int main(int argc, char * argv[]){
                             }
                         }
                         strncpy(surname, argv[i+1],strlen(argv[i+1]));
+						printf("%s\n",surname);
                         contagem++;
                     }
                 }
@@ -59,7 +62,7 @@ int main(int argc, char * argv[]){
                 }else{
                     printf("Invalid IP Address\n");
                 }
-            }else if(strcmp(argv[i],"-q")==0){//UDP Port, valor dos portos está entre 1024 e 65535 (valor máximo é 65535 2^16-1 16 bits)  1024–49151 portos registados acima de 49151 are called dynamic and/or private ports
+            }else if(strcmp(argv[i],"-q")==0){//UDP Port, Port value must be between 1024 and 65535 (maxvalue is 65535 2^16-1 16 bits)  1024–49151 registed ports 49151-65535 are called dynamic and/or private ports
                 if((49151 < atoi(argv[i+1])) && (atoi(argv[i+1])<= 65535)){//Check if the port is valid
                     snp_port=atoi(argv[i+1]);
                     contagem++;
@@ -71,12 +74,11 @@ int main(int argc, char * argv[]){
         }
         //Get the address of Tejo
         strcpy(name_ip_servidor,"tejo.tecnico.ulisboa.pt");//Omitted values
-        ipaddress_sa = getaddressbyname(&name_ip_servidor);//Convert from name to ip
+        ipaddress_sa = getaddressbyname(&name_ip_servidor);//Convert from name to ip - gethostsname.c
         porto_servidor = 58000;
-
         if(contagem != 3){bad_arguments=1;}//Wrong arguments
 
-        //All arguments
+    //All arguments, argc=11
     }else if(argc==11){
         for(i=1;i<11;i+=2){
             if(strcmp(argv[i],"-n")==0){//Surname
@@ -98,14 +100,14 @@ int main(int argc, char * argv[]){
                         contagem++;
                     }
                 }
-            }else if(strcmp(argv[i],"-s")==0){//IP address
-                if(inet_pton(AF_INET,argv[i+1],&(ipaddress.s_addr))==1){        //Check if the ip is valid
+            }else if(strcmp(argv[i],"-s")==0){//IP address SNP
+                if(inet_pton(AF_INET,argv[i+1],&(ipaddress.s_addr))==1){//Check if the ip is valid
                     strcpy(ip_maquina, argv[i+1]);
                     contagem++;
                 }else{
                     printf("Invalid IP Address\n");
                 }
-            }else if(strcmp(argv[i],"-q")==0){//UDP Port
+            }else if(strcmp(argv[i],"-q")==0){//UDP Port SNP
                 if((49151 < atoi(argv[i+1])) && (atoi(argv[i+1])<= 65535)){//Check if the port is valid
                     snp_port=atoi(argv[i+1]);
                     contagem++;
@@ -113,14 +115,14 @@ int main(int argc, char * argv[]){
                     printf("Invalid Port: Value of Port must be between 49151 and 65535\n");
                     bad_arguments=1;
                 }
-            }else if(strcmp(argv[i],"-i")==0){//IP address of surname's server
+            }else if(strcmp(argv[i],"-i")==0){//IP address SA
                 if(inet_pton(AF_INET,argv[i+1],&(ipaddress_sa.s_addr))==1){//Check if the ip is valid
                     strcpy(ip_servidor, argv[i+1]);
                     contagem++;
                 }else{
                     printf("Invalid IP Address\n");
                 }
-            }else if(strcmp(argv[i],"-p")==0){//Port of surname's server
+            }else if(strcmp(argv[i],"-p")==0){//Port SA
                 if((49151 < atoi(argv[i+1])) && (atoi(argv[i+1])<= 65535)){//Check if the port is valid
                     porto_servidor=atoi(argv[i+1]);
                     contagem++;
@@ -133,149 +135,78 @@ int main(int argc, char * argv[]){
         if(contagem != 5){bad_arguments=1;}//Wrong arguments
     }
 
-    //Check the host's address
-    /*struct in_addr compare_address;
-     compare_address = get_host_name();
-     if(compare_address.s_addr!=ipaddress.s_addr){
-     printf("SNP´s address doesn't correspond to the address where the application is running\n");
-     printf("Try %s for IP address\n",inet_ntoa(ipaddress));
-     exit(1);
-     }*/
-
     //Missing arguments , too many arguments or bad arguments
     if((argc!=7 && argc!=11) || bad_arguments == 1){
-        printf("Invocar aplicação da seguinte forma: ./snp -n surname -s snpip -q snpport [-i saip] [-p saport]\n");
-        exit(1);
+        printf("Start the program as follows: ./snp -n surname -s snpip -q snpport [-i saip] [-p saport]\n");
+        exit(-1);
     }
-
-    //Print of the values
+    //Values
     printf("SNP:\nSurname: %s\nIP address: %s\nPort: %d\n\n",surname,ip_maquina,snp_port);
     printf("SA:\nIP address: %s\nPort: %d\n\n",inet_ntoa(ipaddress_sa),porto_servidor);
 
-    //Registo do servidor de nomes,envio da sua localizaçã para o servidor de apelidos
-    sprintf(message,"SREG %s;%s;%d",surname,ip_maquina,snp_port);
-    udp_socket(ipaddress_sa,porto_servidor,&message);
-
-    //----------------------------------------------//
-    //Menu Aqui
+    //-----------------------------------Menu------------------------------------------------//
     struct sockaddr_in addr;
-
-    int fd_file,fd_socket_schat,result, ret, num_elements=0;
+    int fd_file,fd_socket_schat, num_elements=0, exit_menu=0;
     int *num_elements_ptr= &num_elements;
-    //int prev_num_elements=0;
     fd_set readset;
-    char option[32], user_input[32];
-
-    int exit_menu=0;
-
-    printf("\nWelcome to the Name Server Interface. Choose an action: \n 1: List\n 2: Exit \n");
-
-    if((fd_socket_schat = socket(AF_INET,SOCK_DGRAM,0))==-1)exit(1); //error
-
+    char option[32];
+    
+    printf("\nWelcome to the Name Server Interface. Choose an action: \n\n 1: list\n 2: exit \n");
+	//------Open socket to communicate with Schat's------
+    if((fd_socket_schat = socket(AF_INET,SOCK_DGRAM,0))==-1){
+		perror("Socket: "); exit(1);
+	}
     memset((void*)&addr,(int)'\0',sizeof(addr));
     addr.sin_family=AF_INET;
     addr.sin_addr.s_addr=htonl(INADDR_ANY);
     addr.sin_port=htons(snp_port);
-
     //Bind
-    ret=bind(fd_socket_schat,(struct sockaddr*)&addr,sizeof(addr));
-    if(ret==-1)exit(1);
-
-    printf("Waiting for connections ...\n");
-    //element * previous_ptr_to_first = ptr_to_first;
-
+    if(bind(fd_socket_schat,(struct sockaddr*)&addr,sizeof(addr))==-1){
+		perror("Bind failed: "); exit(2);
+	}
+	//----------------------------------------------
+    //Regist of the SNP on SA
+    sprintf(message,"SREG %s;%s;%d",surname,ip_maquina,snp_port);
+    udp_socket(ipaddress_sa,porto_servidor,&message);//udp_socket_client.c
+	printf("Registed on SA. Waiting for connections ...\n");
+	//----------------------------------------------
+	//Main cycle: waiting for activity on socket or input from keyboard
     while(exit_menu==0){
-        //prev_num_elements=num_elements;
-
         fd_file = fileno(stdin);
         FD_ZERO(&readset);
         FD_SET(fd_socket_schat,&readset);
         FD_SET(fileno(stdin), &readset);
-
-        result = select(fd_file+fd_socket_schat+1,&readset,NULL,NULL,NULL);
-        if(result==-1)exit(1);//error
-
-        printf("Result: %d\n", result);
-
+        if(select(max(fd_file,fd_socket_schat)+1,&readset,NULL,NULL,NULL)==-1){
+			perror("Error in select(): ");  exit(3); //Error in select
+		}
+		//Activity on keyboard
         if(FD_ISSET(fd_file,&readset)) {
             fgets(option,32,stdin);
-            sscanf(option, "%s", user_input);
-            if (strcmp(user_input,"exit")==0){
+            if (strncmp(option,"exit",4)==0){
                 printf("Server terminating...\n");
                 exit_menu=1;
             }else{
-                if(strcmp(user_input,"list")==0){
-                    printf("List:       [%d]\n\n", num_elements);
+                if(strncmp(option,"list",4)==0){
+                    printf("List: [%d]\n", num_elements);
                     printList(ptr_to_first);
                 }else {
-                    printf("Command not found!\n");
+                    printf("Command not found.\n");
                 }
             }
-        }
-
+        } 
+		// Activity on socket
         if(FD_ISSET(fd_socket_schat,&readset)) {
-
-            ptr_to_first = udp_socket_server(ptr_to_first,num_elements_ptr, fd_socket_schat,addr,ipaddress_sa);
-            /*if (prev_num_elements!=num_elements && ptr_to_first!=previous_ptr_to_first) {
-                printf("New Register!\n");
-                prev_num_elements=num_elements;
-            }else{
-                printf("Name/Surname already in use prev:%d     current %d\n", prev_num_elements, num_elements);
-                }*/
-
+            ptr_to_first = udp_socket_server(ptr_to_first,num_elements_ptr, fd_socket_schat,addr,ipaddress_sa);//udp_socket_client.c
         }
-		}
-
-    //-----------------------------------------------//
-
-    //------Remover o servidor de nomes proprios do de apelidos-----
+	}
+	//---------------------------------------------------------------------------------//
+    //------Remove SNP from SA-----//
     sprintf(message,"SUNR %s",surname);
-    udp_socket(ipaddress_sa,porto_servidor,&message);
-
-    /*
-
-     // Linked list with elements with Full Name <--> IP address
-     element *ptr_to_first;* new,
-     char n_name[20], n_surname[20], n_ip[20];
-     ptr_to_first = NULL;
-
-     // Interface with the user
-     int interface_option;
-     int exit_menu=0;
-     while(exit_menu==0){
-
-     printf("\nWelcome to the Name Server Interface. Choose an action: \n 1: List\n 2: Exit \n 3: [TESTING] Add to list \n Action nr: ");
-     scanf("%d",&interface_option);
-
-     switch (interface_option) {
-     case 1:
-     printf("\n Complete table of association [Full name] <--> [IP]<\n");
-     print_list(ptr_to_first);
-     break;
-     case 2:
-     printf("\n Terminating server... \n");
-     exit_menu=1;
-     break;
-     // NOT PART OF THE INTERFACE. Just for testing the linked list.
-     case 3:
-     printf("\n Write in format [Name Surname IP] to be added: ");
-     scanf("%s", n_name);
-     scanf("%s", n_surname);
-     scanf("%s", n_ip);
-     ptr_to_first = addElement(n_name,n_surname, n_ip, ptr_to_first);
-     break;
-     case 4:
-     printf("\n Write in format to delete from list [Name Surname]: ");
-     scanf("%s", n_name);
-     scanf("%s", n_surname);
-     ptr_to_first = deleteElement(ptr_to_first, n_name, n_surname);
-     break;
-     }
-     }*/
-
+    udp_socket(ipaddress_sa,porto_servidor,&message);//udp_socket_client.c
     //Frees
-    free(message);
-
+    free(message); free(name_ip_servidor); free(surname); free(ip_servidor); free(ip_maquina);
+    freeList(ptr_to_first);
+	//Exit
     exit(0);
 }
 

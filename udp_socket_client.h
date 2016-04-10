@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-element * udp_socket2(struct in_addr ip,int port,char** message);
+element * udp_socket_to_snp(struct in_addr ip,int port,char** message);
 
 void udp_socket(struct in_addr ip,int port,char** message);
 

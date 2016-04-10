@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-int tcp_connect(struct in_addr ip,int port,char keyfile[], char * a_name, char * a_surname);
+int tcp_connect(struct in_addr ip,int port,char keyfile[], char * a_name, char * a_surname, char * dest_name, char * dest_surname);
 int authentication_client(struct sockaddr_in addr, char *keyfile, int fd);
 void write_tcp(char * ptr, int fd);
 char * read_tcp(int fd);

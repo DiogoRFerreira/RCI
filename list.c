@@ -1,4 +1,3 @@
-
 #include "list.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,25 +7,23 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-element infotoelement2(char surname[], char ip[], int port) {
-    element new_element;
-    strcpy(new_element.surname, surname);
-    strcpy(new_element.ip, ip);
-    new_element.port = port;
+element *infotoelement2(char surname[], char ip[], int port) {
+    element * new_element =(element*)malloc(sizeof(element));
+    strcpy(new_element->surname, surname);
+    strcpy(new_element->ip, ip);
+    new_element->port = port;
     return new_element;
 }
 
-element infotoelement(char name[], char surname[], char ip[], int port) {
-    element new_element;
-    strcpy(new_element.name, name);
-    strcpy(new_element.surname, surname);
-    strcpy(new_element.ip, ip);
-    new_element.port = port;
+element * infotoelement(char name[], char surname[], char ip[], int port) {
+    element * new_element=(element*)malloc(sizeof(element));
+    strcpy(new_element->name, name);
+    strcpy(new_element->surname, surname);
+    strcpy(new_element->ip, ip);
+    new_element->port = port;
     return new_element;
 }
-
-
-
+// Check for element with name and surname on the list
 element * CheckInList(element * ptr_to_first, char name[20], char surname[20]){
 
     element * current = ptr_to_first;
@@ -46,17 +43,17 @@ element * CheckInList(element * ptr_to_first, char name[20], char surname[20]){
 }
 
 // Function to add new elements in an alphabetically sorted way
-element * addElement(element * ptr_to_first, element argElement, int * num_elements_ptr) {
+element * addElement(element * ptr_to_first, element * argElement, int * num_elements_ptr) {
 
 
         element * current, *previous, * new_element = (element*)malloc(sizeof(element));
 
         //Copy the strings given into the new element to add.
-        strcpy(new_element->name, argElement.name);
-        strcpy(new_element->surname, argElement.surname);
-        strcpy(new_element->ip, argElement.ip);
-        new_element->port = argElement.port;
-        printf("New register: %s %s %s %d\n", new_element->name,new_element->surname, new_element->ip, new_element->port);
+        strcpy(new_element->name, argElement->name);
+        strcpy(new_element->surname, argElement->surname);
+        strcpy(new_element->ip, argElement->ip);
+        new_element->port = argElement->port;
+        printf("New entry in cache: [%s] [%s] [%s] [%lu]\n", new_element->name,new_element->surname, new_element->ip, new_element->port);
         // Initialize pointers. Previous is used in order not to loose the element previous to the current in case of inserting before current.
         current = ptr_to_first;
         previous = ptr_to_first;
@@ -155,15 +152,16 @@ void freeList(element * ptr_to_first)
 void printList(element * ptr_to_first) {
 
     element * current = ptr_to_first;
-
+	 printf("---------------------------------------------------------------------------------------------\n");
     if (current==NULL) {
         printf("Empty list!\n");
     }else {
         while (current!=NULL) {
-            printf("%s %s %s %d\n", current->name, current->surname, current->ip, current->port);
+            printf("%s %s %s %lu\n", current->name, current->surname, current->ip, current->port);
             current=current->next;
         }
     }
+     printf("---------------------------------------------------------------------------------------------\n");
     return;
 }
 
